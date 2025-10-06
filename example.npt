@@ -1,4 +1,5 @@
 use math
+use debug 
 
 f = (x,y) -> x + y 
 z = f(1,1)
