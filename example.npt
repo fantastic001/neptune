@@ -44,3 +44,9 @@ if (x == 6) {
 {
     xxx = 5
 }.xxx
+
+inc = (x) -> x + 1 
+inc (1)
+
+use shell 
+ls ()
