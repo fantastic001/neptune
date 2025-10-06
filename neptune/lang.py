@@ -1,10 +1,12 @@
 
 from abc import abstractmethod
 import math
+import os
 import random
 from tatsu import compile 
 import sys
-
+from neptune.config import get_classes_inheriting, get_config_list
+import neptune.base_provider
 
 
 class IdentifierProvider:
@@ -50,7 +52,7 @@ class Context:
         return False
     
     def copy(self):
-        new_context = Context(self.providers)
+        new_context = Context(self.providers.copy())
         new_context.identifiers = self.identifiers.copy()
         return new_context
     
@@ -490,8 +492,33 @@ class OperatorDefinition:
                 return evaluate(ctx, body)
         context[name] = (OpEval(), left)
 
+
+class Use:
+    def evaluate(self, context, lhs, rhs):
+        assert len(lhs) == 0
+        assert len(rhs) > 0
+        if len(rhs) == 1:
+            args = [] 
+        else:
+            ctx = Context(providers=[])
+            args = evaluate(ctx, rhs[1:])
+        name = rhs[0].name
+        providers = get_classes_inheriting(neptune.base_provider.LibraryProvider)
+        
+        for p in providers:
+            if p().provide(context, name, args):
+                return
+        raise ValueError("Cannot import name %s" % name)
+            
+
+            
+            
+
+
+
 BUILTINS = {
     ":": (OperatorDefinition(), 0),
+    "use": (Use(), 0),
     "=": (Assignment(), 1),
     "->": (FunDef(), 5),
     "?": (If(), 6),
@@ -516,28 +543,30 @@ class BuiltinFunctionProvider(IdentifierProvider):
     def provide(self, name):
         return BUILTINS.get(name, None)
 
+def load(filename):
+    context = Context(providers = [BuiltinFunctionProvider()])
+    code = "" 
+    with open(filename, 'r') as file:
+        last_ident = None
+        for line in file:
+            stripped = line.lstrip()
+            ident = len(line) - len(stripped); 
+            if last_ident is not None and ident <= last_ident and code.strip():
+                code += " ; "
+            code += stripped
+            last_ident = ident
+        code = parser_ops.parse(code)
+        value = None
+        for r in code:
+            value = evaluate(context, r)  
+        return value, context
+    
 
 if __name__ == "__main__":
-    context = Context(providers=[BuiltinFunctionProvider()])
     f = sys.argv[1] if len(sys.argv) > 1 else None
     if f:
-        code = "" 
-        with open(f, 'r') as file:
-            last_ident = None
-            for line in file:
-                # count identation 
-                stripped = line.lstrip()
-                ident = len(line) - len(stripped)
-                # if this line is <= last ident, we are done with the previous block so we add ; 
-                if last_ident is not None and ident <= last_ident and code.strip():
-                    code += " ; "
-                code += stripped
-                last_ident = ident
-            code = parser_ops.parse(code)
-            value = None
-            for r in code:
-                value = evaluate(context, r)  
-            print(value)
+        value, context = load(f)
+        print(value)
     else:
         while True:
             result = input("> ") + ";"
