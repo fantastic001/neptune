@@ -279,7 +279,6 @@ def evaluate(context, expr):
             if not min_op:
                 raise ValueError(f"Operator {expr[op_index].name} not found in context")
             if hasattr(min_op, "evaluate"):
-                print("Evaluating %s lhs=%s rhs=%s" % (min_op, left, right))
                 return min_op.evaluate(context, left, right)
             else:
                 left_evaluated = evaluate(context, left)
@@ -492,7 +491,6 @@ class OperatorDefinition:
             raise ValueError("Only integers should be set as priority")   
         left = evaluate(Context(providers=[]), left)
         assert isinstance(left, int)
-        print(right)
         name = right[0].name 
         lhs_name = right[2].items[0][0].name
         rhs_name = right[2].items[1][0].name
@@ -506,7 +504,6 @@ class OperatorDefinition:
                 for k,v in ctx.items():
                     if k not in old_ctx:
                         old_ctx[k] = v 
-                print("Body: %s"  % body)
                 return evaluate(ctx, body)
         context[name] = (OpEval(), left)
 
@@ -599,7 +596,5 @@ if __name__ == "__main__":
                     value = evaluate(context, r)
                 elif isinstance(r, list) or isinstance(r, tuple):
                     value = evaluate(context, r)
-                else:
-                    print(f"Unknown: {r}")
             print(value)
         
