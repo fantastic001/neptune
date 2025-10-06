@@ -1,0 +1,40 @@
+
+f = (x,y) -> x + y 
+z = f(1,1)
+f(4,6)
+
+x = @{
+    haha = 5
+}
+
+x.haha
+x.haha
+
+"haha" @ x
+
+x . {
+    1 + haha
+}
+
+x = {
+    haha = 5
+}
+
+x.{
+    1 + haha
+}
+
+$x 
+
+if = (condition, truth) -> condition ? ($ truth) ($ {})
+
+x = 6 
+
+if (x == 6) {
+    hoho = 10000
+}
+
+
+1000 : OOO = (lhs, rhs) -> $lhs > $rhs ? "WOHOOO"
+
+100 OOO 7
