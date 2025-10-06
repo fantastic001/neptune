@@ -62,8 +62,7 @@ class Context:
     
     def copy(self):
         new_context = Context(self.providers.copy())
-        new_context.identifiers = self.identifiers.copy()
-        new_context.uses = self.uses 
+        new_context.identifiers = self.identifiers.copy() 
         return new_context
     
     def __delitem__(self, name):
