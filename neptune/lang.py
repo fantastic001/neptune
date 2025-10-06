@@ -18,6 +18,15 @@ class Context:
     def __init__(self, providers):
         self.providers = providers
         self.identifiers = {} 
+        self.uses = [] 
+    
+    def use(self, provider):
+        self.uses.append(provider)
+
+    def finish(self):
+        for p in self.uses:
+            if hasattr(p, "finish"):
+                p.finish(self)
     
     def get(self, name):
         if name in self.identifiers:
@@ -54,6 +63,7 @@ class Context:
     def copy(self):
         new_context = Context(self.providers.copy())
         new_context.identifiers = self.identifiers.copy()
+        new_context.uses = self.uses 
         return new_context
     
     def __delitem__(self, name):
@@ -327,6 +337,7 @@ class ExprEval:
             result = evaluate(local_context, e.parts)
             if isinstance(result, list):
                 return result[-1] if result else None
+            local_context.finish()
             return result
         else:
             raise ValueError("Right side of $ operator must be a single Expression")
@@ -336,26 +347,29 @@ class ContextExtraction():
         if len(left) == 0:
             my_context = context.copy()
             expr = evaluate(my_context, right[0].parts) 
+            my_context.finish()
             return my_context.identifiers
         if len(left) != 1:
             raise ValueError("Left side of context extraction must be a single identifier name")
         if not right:
             raise ValueError("Right side of context extraction must be a single expression")
         right = evaluate(context, right)
-        print(right)
         if not isinstance(right, Expression) and not isinstance(right, dict):
             raise ValueError("Right side of context extraction must be an Expression or object")
         my_context = context.copy()
         identifier = evaluate(my_context, left[0])
         if isinstance(identifier, str):
             if isinstance(right, dict):
+                my_context.finish()
                 return right.get(identifier, None)
             elif isinstance(right, Expression):
                 result = evaluate(my_context, right.parts)
+                my_context.finish()
                 return my_context[identifier]
         elif isinstance(identifier, Expression):
             assert isinstance(right, Expression)
             result = evaluate(my_context, right.parts)
+            my_context.finish()
             return evaluate(my_context, identifier.parts)
 
 class Identifiers():
@@ -373,6 +387,7 @@ class Identifiers():
                 raise ValueError("Right side of identifiers() must be an Expression or empty")
             my_context = context.copy()
             expr = evaluate(my_context, right[0].parts)
+            my_context.finish()
             return ListExpression([k for k, v in my_context.items() if not k in context.identifiers])
 
 
@@ -435,15 +450,20 @@ class Access(Operator):
                 identifier = right[0].name 
                 if isinstance(result, Expression):
                     _ = evaluate(my_context, result.parts)
-                return context[identifier]
+                my_context.finish()
+                return my_context[identifier]
             elif isinstance(right[0], Expression):
                 if isinstance(result, Expression):
                     _ = evaluate(my_context, result.parts)
-                    return evaluate(my_context, right[0].parts)
+                    result = evaluate(my_context, right[0].parts)
+                    my_context.finish()
+                    return result
                 elif isinstance(result, dict):
                     for k,v in result.items():
                         my_context[k] = v
-                    return evaluate(my_context, right[0].parts)
+                    result =  evaluate(my_context, right[0].parts)
+                    my_context.finish()
+                    return result
 
 
 
@@ -459,7 +479,6 @@ class Assignment:
             raise ValueError("Left side of assignment must be an identifier")
         right_value = evaluate(context, right)
         context[left.name] = right_value
-        print(f"Assigned {left.name} = {repr(right_value)}")
         return right_value
 
 class If:
@@ -506,7 +525,9 @@ class Use:
         providers = get_classes_inheriting(neptune.base_provider.LibraryProvider)
         
         for p in providers:
-            if p().provide(context, name, args):
+            obj = p() 
+            if obj.provide(context, name, args):
+                context.use(obj)
                 return
         raise ValueError("Cannot import name %s" % name)
             
@@ -559,6 +580,7 @@ def load(filename):
         value = None
         for r in code:
             value = evaluate(context, r)  
+        context.finish()
         return value, context
     
 
