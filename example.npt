@@ -39,3 +39,7 @@ if (x == 6) {
 1000 : OOO = (lhs, rhs) -> $lhs > $rhs ? "WOHOOO"
 
 100 OOO 7
+
+{
+    xxx = 5
+}.xxx
