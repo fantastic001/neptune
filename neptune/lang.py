@@ -3,6 +3,7 @@ from abc import abstractmethod
 import math
 import os
 import random
+from threading import local
 from tatsu import compile 
 import sys
 from neptune.config import get_classes_inheriting, get_config_list
@@ -346,10 +347,11 @@ class ExprEval:
         if left:
             raise ValueError("Left side of $ operator must be empty")
         if right and len(right) == 1:
-            e = evaluate(context, right[0])
             local_context = context.copy()
+            e = evaluate(context, right[0])
             result = evaluate(local_context, e.parts)
             if isinstance(result, list):
+                local_context.finish()
                 return result[-1] if result else None
             local_context.finish()
             return result
