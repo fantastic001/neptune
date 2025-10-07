@@ -19,9 +19,26 @@ class CommandProvider(IdentifierProvider):
         path = shutil.which(name).encode('utf-8') if shutil.which(name) else None
         return (CommandOperator(path), 100) if path else None
 
+class PipelineOperator:
+    def evaluate(self, ctx, lhs, rhs):
+        lcmd = evaluate(ctx, lhs[0])
+        rcmd = evaluate(ctx, rhs[0])
+        print(lcmd, rcmd)
+        if not lcmd or not rcmd:
+            raise ValueError("Both sides of the pipeline must be valid commands")
+        
+        largs = [evaluate(ctx, arg) for arg in lhs[1:] if arg]
+        rargs = [evaluate(ctx, arg) for arg in rhs[1:] if arg]
+        lproc = subprocess.Popen([lcmd.command] + largs, stdout=subprocess.PIPE, text=True)
+        rproc = subprocess.Popen([rcmd.command] + rargs, stdin=lproc.stdout, stdout=subprocess.PIPE, text=True)
+        lproc.stdout.close()
+        output, _ = rproc.communicate()
+        return output.strip()
+
 class ShellProvider(neptune.base_provider.LibraryProvider):
     def provide(self, ctx, name, args):
         if name == "shell":
             ctx.providers.append(CommandProvider())
+            ctx["|" ] = (PipelineOperator(), 5)
             return True
         return False

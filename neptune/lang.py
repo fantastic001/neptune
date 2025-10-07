@@ -95,7 +95,10 @@ class Identifier:
     def __str__(self) -> str:
         return self.name
     def evaluate(self, context: dict):
-        return context[self.name]
+        res =  context[self.name]
+        if isinstance(res, tuple):
+            return res[0]
+        return res
 
 GRAMMAR_OPS = """
 
