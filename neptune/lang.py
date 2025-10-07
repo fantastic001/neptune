@@ -247,6 +247,13 @@ class CustomOpSemantics:
 
 parser_ops = compile(GRAMMAR_OPS, semantics=CustomOpSemantics())
 
+def is_operator(obj):
+    return hasattr(obj, 'evaluate')
+def is_function(obj):
+    return not is_operator(obj) and callable(obj)
+def is_evaluatable(obj):
+    return is_operator(obj) or is_function(obj)
+
 def evaluate(context, expr):
     if isinstance(expr, list) or isinstance(expr, tuple):
         if not expr:
@@ -276,7 +283,13 @@ def evaluate(context, expr):
             if op_index == -1 and len(expr) == 1:
                 return evaluate(context, expr[0])
             if op_index == -1:
-                return [evaluate(context, e) for e in expr]
+                head = evaluate(context, expr[0])
+                if is_operator(head):
+                    return head.evaluate(context, [], expr[1:])
+                elif is_function(head):
+                    return head(*[evaluate(context, e) for e in expr[1:]])
+                else:
+                    return [evaluate(context, head)] + [evaluate(context, e) for e in expr[1:]]
             left = expr[:op_index]
             right = expr[op_index+1:]
             if not min_op:
