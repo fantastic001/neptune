@@ -23,7 +23,6 @@ class PipelineOperator:
     def evaluate(self, ctx, lhs, rhs):
         lcmd = evaluate(ctx, lhs[0])
         rcmd = evaluate(ctx, rhs[0])
-        print(lcmd, rcmd)
         if not lcmd or not rcmd:
             raise ValueError("Both sides of the pipeline must be valid commands")
         
