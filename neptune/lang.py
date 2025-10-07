@@ -533,7 +533,7 @@ class Use:
         if len(rhs) == 1:
             args = [] 
         else:
-            ctx = Context(providers=[])
+            ctx = context.copy()
             args = evaluate(ctx, rhs[1:])
         name = rhs[0].name
         providers = get_classes_inheriting(neptune.base_provider.LibraryProvider)
