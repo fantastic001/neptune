@@ -10,7 +10,7 @@ class EqualsOverride:
     def evaluate(self, context, left, right):
         name = left[0].name
         print("Assigning to %s value %s" % (name, right))
-        self.existing.evaluate(context, left, right)
+        return self.existing.evaluate(context, left, right)
 
 class DebugProvider(neptune.base_provider.LibraryProvider):
     def provide(self, ctx, name, args):
